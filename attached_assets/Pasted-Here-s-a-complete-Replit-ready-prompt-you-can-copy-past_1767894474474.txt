@@ -1,0 +1,63 @@
+Here's a complete Replit-ready prompt you can copy-paste into Replit Agent (or use manually) to build the full MediaPipe + Canvas T-shirt try-on:
+
+```
+Create a complete web-based virtual T-shirt try-on app using HTML5, JavaScript, and MediaPipe Pose running in browser. Full requirements:
+
+1. **HTML Structure**
+- Video element (400x600px) for live webcam feed
+- Canvas (same size) overlay for T-shirt rendering  
+- Controls: File input for T-shirt PNG upload, color picker, flip button
+
+2. **Core Features**
+- Access webcam via getUserMedia (request 720p)
+- MediaPipe Pose detection at 30fps (selfie mode, smooth landmarks)
+- Detect upper body keypoints: shoulders(11,12), hips(23,24), neck(0)
+- Upload T-shirt PNG → extract transparent clothing region automatically
+
+3. **T-shirt Warping Logic** 
+```
+ shouldersDistance = dist(keypoint11, keypoint12)
+ scaleFactor = shouldersDistance / referenceShirtWidth (200px)
+ rotation = angle(keypoint11-neck, keypoint12-neck) 
+ homographyMatrix = compute from 4 corners (shoulders+hips)
+ warp T-shirt PNG onto canvas using Canvas2D transform
+```
+
+4. **Visual Polish**
+- Transparent background (only show warped T-shirt on body)
+- Smooth interpolation between frames (lerp positions 0.7 factor)
+- Drop shadow on T-shirt (feather 5px, offset 3px)
+- Mobile responsive + touch controls
+
+5. **UI/UX**
+```
+┌─────────────────┐
+│ [📷 Live Cam]   │ ← 400x600 main view
+│                 │
+│ [Choose Shirt]  │ ← File upload
+│ [🎨 Color]      │ ← Color overlay slider  
+│ [↕️ Flip] [▶️]  │
+└─────────────────┘
+```
+
+6. **Performance**
+- Target 30fps on mid-range phones
+- Pause detection when tab inactive
+- Error handling for camera permission/blocked
+
+**Tech Stack**: Pure vanilla JS + MediaPipe CDN + Canvas2D API only (no Three.js/WebGL)
+**Files**: index.html (complete single file)
+
+Make it production-ready with instructions to add custom T-shirt PNGs. Deploy instantly on Replit.
+```
+
+**Pro Tip**: After Agent generates it, add this CSS for perfect mobile preview:
+```css
+body {margin:0; background:linear-gradient(135deg,#667eea,#764ba2);}
+video,canvas {border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3);}
+```
+
+This creates your exact Lens Studio effect in web—forkable, shareable, runs anywhere with a camera![1][2]
+
+[1](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/images/91339172/2c7f91bd-e87f-422d-a852-efc39e62f02f/image.jpg)
+[2](https://www.perplexity.ai/search/af79fbc8-30cc-4f3c-a8c5-88ac78052ccc)
