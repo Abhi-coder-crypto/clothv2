@@ -93,9 +93,9 @@ export default function Home() {
         const scale = shoulderWidth * 2.2; 
         
         // Calculate center point (midpoint between shoulders)
-        // Adjusted Y offset from 0.4 to 0.15 to sit higher up on the shoulders
+        // Adjusted Y offset to 0.3 to move the shirt down a bit from the shoulders
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.15);
+        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.3);
 
         // Calculate rotation angle
         // Add 180 degrees (Math.PI) to rotation to flip the shirt right-side up
