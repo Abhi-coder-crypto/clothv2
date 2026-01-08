@@ -59,11 +59,13 @@ export default function Home() {
     // Draw the camera feed
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-    // Optional: Draw skeleton for debugging/cool effect
-    // ctx.globalAlpha = 0.2;
-    // drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
-    // drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
-    // ctx.globalAlpha = 1.0;
+    // Draw full body mesh (skeleton) for better visualization and tracking accuracy
+    if (results.poseLandmarks) {
+      ctx.globalAlpha = 0.5;
+      drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+      drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
+      ctx.globalAlpha = 1.0;
+    }
 
     if (results.poseLandmarks) {
       const landmarks = results.poseLandmarks;
