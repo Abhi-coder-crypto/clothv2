@@ -89,12 +89,13 @@ export default function Home() {
         );
 
         // Scale factor (tweak this for fit)
-        const scale = shoulderWidth * 2.8; 
+        // Adjusted from 2.8 to 2.2 to fit the body box more accurately
+        const scale = shoulderWidth * 2.2; 
         
         // Calculate center point (midpoint between shoulders)
-        // Adjust Y based on shoulder position to start at neck/collar
+        // Adjusted Y offset from 0.45 to 0.4 to sit better on the torso
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.45);
+        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.4);
 
         // Calculate rotation angle
         // Add 180 degrees (Math.PI) to rotation to flip the shirt right-side up
