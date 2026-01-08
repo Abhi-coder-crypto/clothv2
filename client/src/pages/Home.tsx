@@ -61,10 +61,11 @@ export default function Home() {
 
     // Draw full body mesh (skeleton) for better visualization and tracking accuracy
     if (results.poseLandmarks) {
+      ctx.save();
       ctx.globalAlpha = 0.5;
       drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
       drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
-      ctx.globalAlpha = 1.0;
+      ctx.restore();
     }
 
     if (results.poseLandmarks) {
