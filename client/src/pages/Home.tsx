@@ -63,8 +63,12 @@ export default function Home() {
     if (results.poseLandmarks) {
       ctx.save();
       ctx.globalAlpha = 0.5;
-      drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
-      drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
+      
+      // Filter landmarks to exclude face points (0-10)
+      const bodyLandmarks = results.poseLandmarks.map((lm, i) => i < 11 ? { ...lm, visibility: 0 } : lm);
+      
+      drawConnectors(ctx, bodyLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+      drawLandmarks(ctx, bodyLandmarks, { color: '#FF0000', lineWidth: 1 });
       ctx.restore();
     }
 
