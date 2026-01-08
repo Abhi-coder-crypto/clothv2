@@ -88,15 +88,17 @@ export default function Home() {
         // Scale factor (tweak this for fit)
         const scale = shoulderWidth * 2.8; 
         
-        // Calculate center point (midpoint between shoulders, slightly lowered)
+        // Calculate center point (midpoint between shoulders)
+        // Adjust Y based on shoulder position to start at neck/collar
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.1);
+        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.45);
 
         // Calculate rotation angle
+        // Add 180 degrees (Math.PI) to rotation to flip the shirt right-side up
         const angle = Math.atan2(
           (rightShoulder.y - leftShoulder.y) * videoHeight,
           (rightShoulder.x - leftShoulder.x) * videoWidth
-        );
+        ) + Math.PI;
 
         // Draw the shirt
         ctx.translate(centerX, centerY);
