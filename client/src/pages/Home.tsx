@@ -129,9 +129,9 @@ export default function Home() {
         let scale = shoulderDistPx * 2.4;
         
         if (view === "left" || view === "right") {
-          // In side view, shoulder distance is small, use hip-to-shoulder height instead
+          // Reduce side view scale as it was appearing too big
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
-          scale = bodyHeight * 1.8;
+          scale = bodyHeight * 1.4; // Reduced from 1.8 to 1.4
         }
 
         // Keep it straight as requested (no rotation on its axis)

@@ -16,7 +16,8 @@ export function useLooks() {
       const res = await fetch(api.looks.list.path);
       if (!res.ok) throw new Error("Failed to fetch looks");
       const data = await res.json();
-      return z.array(savedLookSelectSchema).parse(data);
+      // Ensure we're returning the raw data to match the expected usage in components
+      return data;
     },
   });
 }
