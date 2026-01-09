@@ -133,7 +133,7 @@ export default function Home() {
           // Reduce side view scale as it was appearing too big
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
           scale = bodyHeight * 1.4; // Reduced from 1.8 to 1.4
-          yOffset = scale * 0.7; // Moved down even further from 0.55 to 0.7 to align with lower torso
+          yOffset = scale * 0.85; // Increased from 0.7 to 0.85 to move the image lower
         }
 
         // Keep it straight as requested (no rotation on its axis)
