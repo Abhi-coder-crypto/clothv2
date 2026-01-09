@@ -134,19 +134,13 @@ export default function Home() {
         
         if (view === "left" || view === "right") {
           // Profile view: use vertical height for scale
-          const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
+          const bodyHeight = Math.max(0.1, Math.abs(leftShoulder.y - leftHip.y)) * videoHeight;
           scale = bodyHeight * 1.6; 
           
           // Align top of shirt with shoulders
-          // In profile, use the visible shoulder's Y as a starting point
           const visibleShoulderY = (view === "left" ? leftShoulder.y : rightShoulder.y) * videoHeight;
           
-          // Calculate drawHeight based on scale and aspect ratio
           const drawHeight = scale * (shirtImage.height / shirtImage.width);
-          
-          // Since we draw with translate(centerX, centerY) and drawImage(-drawWidth/2, -drawHeight/2, ...)
-          // the centerY should be: visibleShoulderY + (drawHeight / 2)
-          // to make the top of the image align with the shoulder Y.
           centerY = visibleShoulderY + (drawHeight / 2);
         } else {
           centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
@@ -154,13 +148,14 @@ export default function Home() {
         
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
 
-        // --- Drawing ---
-        ctx.translate(centerX, centerY);
-        // ctx.rotate(angle); // REMOVED ROTATION as requested
-        
         const drawWidth = scale;
         const drawHeight = scale * (shirtImage.height / shirtImage.width);
 
+        // --- Drawing ---
+        ctx.translate(centerX, centerY);
+        // Ensure no rotation is applied that could flip it upside down
+        // ctx.rotate(0); 
+        
         // Apply color tint
         if (shirtColor !== "#FFFFFF") {
           const tempCanvas = document.createElement('canvas');
