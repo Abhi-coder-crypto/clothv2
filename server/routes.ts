@@ -28,5 +28,14 @@ export async function registerRoutes(
     }
   });
 
+  app.delete(api.looks.delete.path, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID" });
+    }
+    await storage.deleteLook(id);
+    res.json({ success: true });
+  });
+
   return httpServer;
 }

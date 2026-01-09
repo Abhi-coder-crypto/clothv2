@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type InsertSavedLook } from "@shared/routes";
+import { api, buildUrl, type InsertSavedLook } from "@shared/routes";
 
 export function useLooks() {
   return useQuery({
@@ -7,7 +7,8 @@ export function useLooks() {
     queryFn: async () => {
       const res = await fetch(api.looks.list.path);
       if (!res.ok) throw new Error("Failed to fetch looks");
-      return api.looks.list.responses[200].parse(await res.json());
+      const data = await res.json();
+      return api.looks.list.responses[200].parse(data);
     },
   });
 }
@@ -23,6 +24,23 @@ export function useSaveLook() {
       });
       if (!res.ok) throw new Error("Failed to save look");
       return api.looks.create.responses[201].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.looks.list.path] });
+    },
+  });
+}
+
+export function useDeleteLook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const url = buildUrl(api.looks.delete.path, { id });
+      const res = await fetch(url, {
+        method: api.looks.delete.method,
+      });
+      if (!res.ok) throw new Error("Failed to delete look");
+      return api.looks.delete.responses[200].parse(await res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.looks.list.path] });

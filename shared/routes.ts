@@ -18,6 +18,13 @@ export const api = {
         201: z.custom<typeof savedLooks.$inferSelect>(),
       },
     },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/looks/:id',
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      },
+    },
   },
 };
 

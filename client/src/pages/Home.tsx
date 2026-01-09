@@ -209,10 +209,30 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
+        const dataUrl = e.target?.result as string;
         const img = new Image();
-        img.src = e.target?.result as string;
-        img.onload = () => setShirtImages(prev => ({ ...prev, front: img }));
+        img.src = dataUrl;
+        img.onload = async () => {
+          setShirtImages(prev => ({ ...prev, front: img }));
+          
+          // Also save to gallery
+          try {
+            await saveLook.mutateAsync({
+              imageUrl: dataUrl,
+            });
+            toast({
+              title: "Design uploaded",
+              description: "Your design has been added to the gallery.",
+            });
+          } catch (error) {
+            toast({
+              title: "Error",
+              description: "Failed to add design to gallery.",
+              variant: "destructive",
+            });
+          }
+        };
       };
       reader.readAsDataURL(file);
     }
