@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Webcam from "react-webcam";
-import { Pose, Results } from "@mediapipe/pose";
+import { Pose, Results, POSE_CONNECTIONS } from "@mediapipe/pose";
 import { Camera } from "@mediapipe/camera_utils";
+import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ export default function Home() {
   const [useGyro, setUseGyro] = useState(false);
   const [mousePos, setMousePos] = useState(0);
   const [orientation, setOrientation] = useState({ alpha: 0 });
+  const [showSkeleton, setShowSkeleton] = useState(true);
   
   const shirtImages = useRef<{ [key: string]: HTMLImageElement }>({});
 
@@ -49,7 +51,6 @@ export default function Home() {
   const currentView = useMemo(() => {
     let angle = useGyro ? orientation.alpha : mousePos;
     angle = ((angle % 360) + 360) % 360;
-    // Standard rotation: 0=Front, 90=Right, 180=Back, 270=Left
     if (angle >= 45 && angle < 135) return { img: rightImg, label: "Right" };
     if (angle >= 135 && angle < 225) return { img: backImg, label: "Back" };
     if (angle >= 225 && angle < 315) return { img: leftImg, label: "Left" };
@@ -72,6 +73,15 @@ export default function Home() {
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
     if (results.poseLandmarks) {
+      // Draw skeleton tracking points if enabled
+      if (showSkeleton) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+        drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
+        ctx.restore();
+      }
+
       const landmarks = results.poseLandmarks;
       const leftShoulder = landmarks[11];
       const rightShoulder = landmarks[12];
@@ -80,9 +90,7 @@ export default function Home() {
       const rightVis = rightShoulder?.visibility ?? 0;
 
       if (leftVis > 0.5 && rightVis > 0.5) {
-        // Use the label to look up the correct PRELOADED image object
         const shirtImg = shirtImages.current[currentView.label];
-        
         if (shirtImg) {
           const shoulderWidth = Math.sqrt(
             Math.pow((leftShoulder.x - rightShoulder.x) * videoWidth, 2) +
@@ -99,7 +107,6 @@ export default function Home() {
 
           ctx.translate(centerX, centerY);
           ctx.rotate(angle);
-          // Draw the SPECIFIC image for the current rotation
           ctx.drawImage(shirtImg, -scale / 2, -scale / 2, scale, scale * (shirtImg.height / shirtImg.width));
           ctx.rotate(-angle);
           ctx.translate(-centerX, -centerY);
@@ -107,7 +114,7 @@ export default function Home() {
       }
     }
     ctx.restore();
-  }, [currentView.label]); // Depend specifically on the label to trigger redraw with correct image
+  }, [currentView.label, showSkeleton]);
 
   useEffect(() => {
     let camera: Camera | null = null;
@@ -186,6 +193,9 @@ export default function Home() {
           </Button>
           <Button variant={!useGyro ? "default" : "outline"} onClick={() => setUseGyro(false)} className="gap-2">
             <MousePointer2 className="w-4 h-4" /> Desktop Mode
+          </Button>
+          <Button variant={showSkeleton ? "default" : "outline"} onClick={() => setShowSkeleton(!showSkeleton)} className="gap-2">
+             Tracking Points: {showSkeleton ? "ON" : "OFF"}
           </Button>
           {isCameraActive && (
             <Button variant="destructive" onClick={() => setIsCameraActive(false)} className="gap-2">
