@@ -91,17 +91,14 @@ export default function Home() {
           rightShoulder.visibility && rightShoulder.visibility > 0.5) {
         
         // --- View Detection ---
-        // Calculate shoulder depth/angle to determine which view to show
-        // Since it's mirrored, we need to be careful with left/right
         const shoulderDistance = Math.abs(leftShoulder.x - rightShoulder.x);
         const noseRelativeToShoulders = (nose.x - rightShoulder.x) / (leftShoulder.x - rightShoulder.x);
         
         let view: keyof typeof TSHIRT_VIEWS = "front";
         
-        // Basic angle detection based on shoulder visibility and positioning
-        // If nose is far to one side of the shoulder midline, it's a side view
-        if (shoulderDistance < 0.15) {
-          // If shoulders are very close horizontally, it's likely a side view or turned away
+        // Use depth (z) and horizontal positioning for more robust view detection
+        if (shoulderDistance < 0.12) {
+          // Narrow shoulder profile indicates side view
           if (nose.visibility && nose.visibility < 0.3) {
             view = "back";
           } else if (leftShoulder.z < rightShoulder.z) {
@@ -120,37 +117,38 @@ export default function Home() {
         const shirtImage = shirtImages[view];
         if (!shirtImage) return;
 
-        // --- Positioning ---
-        const shoulderWidth = Math.sqrt(
+        // --- Positioning & Scaling ---
+        // Calculate width and height based on visible landmarks
+        const shoulderDistPx = Math.sqrt(
           Math.pow((leftShoulder.x - rightShoulder.x) * videoWidth, 2) +
           Math.pow((leftShoulder.y - rightShoulder.y) * videoHeight, 2)
         );
 
-        // Adjust scale for views
-        // Base scale for front/back, slightly larger for side views to account for profile width
-        let scale = shoulderWidth * 2.4; 
+        // For front/back, use shoulder distance. For sides, we need to estimate depth.
+        let scale = shoulderDistPx * 2.4;
         
-        // Offset adjustments based on view
-        let xOffset = 0;
-        let yOffset = scale * 0.35;
-
-        if (view === "left") {
-          xOffset = -scale * 0.05; // Shift slightly towards the body center in profile
-          scale = shoulderWidth * 2.8; // Profile needs more height/width scaling relative to visible shoulder distance
-        } else if (view === "right") {
-          xOffset = scale * 0.05;
-          scale = shoulderWidth * 2.8;
+        if (view === "left" || view === "right") {
+          // In side view, shoulder distance is small, use hip-to-shoulder height instead
+          const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
+          scale = bodyHeight * 1.8;
         }
-        
-        const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth + xOffset;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
 
-        // Keep it straight as requested (no rotation on its axis)
-        // Only vertical translation and scaling
+        // Calculate rotation based on shoulder line
+        const angle = Math.atan2(
+          (rightShoulder.y - leftShoulder.y) * videoHeight,
+          (rightShoulder.x - leftShoulder.x) * videoWidth
+        ) + Math.PI;
+        
+        const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
+        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.25);
 
         // --- Drawing ---
         ctx.translate(centerX, centerY);
+        ctx.rotate(angle); // Allow slight tilt to match shoulder line
         
+        const drawWidth = scale;
+        const drawHeight = scale * (shirtImage.height / shirtImage.width);
+
         // Apply color tint
         if (shirtColor !== "#FFFFFF") {
           const tempCanvas = document.createElement('canvas');
@@ -163,19 +161,16 @@ export default function Home() {
             tempCtx.fillStyle = shirtColor;
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             
-            const drawWidth = scale;
-            const drawHeight = scale * (shirtImage.height / shirtImage.width);
             ctx.drawImage(shirtImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
             ctx.globalAlpha = 0.6;
             ctx.drawImage(tempCanvas, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
             ctx.globalAlpha = 1.0;
           }
         } else {
-          const drawWidth = scale;
-          const drawHeight = scale * (shirtImage.height / shirtImage.width);
           ctx.drawImage(shirtImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
         }
 
+        ctx.rotate(-angle);
         ctx.translate(-centerX, -centerY);
       }
     }
