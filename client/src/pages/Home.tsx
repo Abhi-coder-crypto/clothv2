@@ -135,9 +135,17 @@ export default function Home() {
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
           scale = bodyHeight * 1.6; 
           
-          // Move higher to align with shoulders
+          // Align top of shirt with shoulders
+          // In profile, use the visible shoulder's Y as a starting point
           const visibleShoulderY = (view === "left" ? leftShoulder.y : rightShoulder.y) * videoHeight;
-          centerY = visibleShoulderY + (scale * 0.3); // Reduced from 0.55 to 0.3 to pull it up
+          
+          // Calculate drawHeight based on scale and aspect ratio
+          const drawHeight = scale * (shirtImage.height / shirtImage.width);
+          
+          // Since we draw with translate(centerX, centerY) and drawImage(-drawWidth/2, -drawHeight/2, ...)
+          // the centerY should be: visibleShoulderY + (drawHeight / 2)
+          // to make the top of the image align with the shoulder Y.
+          centerY = visibleShoulderY + (drawHeight / 2);
         } else {
           centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
         }
