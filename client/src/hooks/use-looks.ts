@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type InsertSavedLook } from "@shared/routes";
+import { z } from "zod";
+
+// Create a local schema for validation to avoid type errors
+const savedLookSelectSchema = z.object({
+  id: z.number(),
+  imageUrl: z.string(),
+  createdAt: z.string().optional().or(z.date().optional()),
+});
 
 export function useLooks() {
   return useQuery({
@@ -8,7 +16,7 @@ export function useLooks() {
       const res = await fetch(api.looks.list.path);
       if (!res.ok) throw new Error("Failed to fetch looks");
       const data = await res.json();
-      return data;
+      return z.array(savedLookSelectSchema).parse(data);
     },
   });
 }

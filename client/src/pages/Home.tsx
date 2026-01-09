@@ -126,12 +126,24 @@ export default function Home() {
           Math.pow((leftShoulder.y - rightShoulder.y) * videoHeight, 2)
         );
 
-        // Adjust scale for side views
-        const baseScale = shoulderWidth * 2.2;
-        const scale = (view === "left" || view === "right") ? baseScale * 0.8 : baseScale;
+        // Adjust scale for views
+        // Base scale for front/back, slightly larger for side views to account for profile width
+        let scale = shoulderWidth * 2.4; 
         
-        const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.3);
+        // Offset adjustments based on view
+        let xOffset = 0;
+        let yOffset = scale * 0.35;
+
+        if (view === "left") {
+          xOffset = -scale * 0.05; // Shift slightly towards the body center in profile
+          scale = shoulderWidth * 2.8; // Profile needs more height/width scaling relative to visible shoulder distance
+        } else if (view === "right") {
+          xOffset = scale * 0.05;
+          scale = shoulderWidth * 2.8;
+        }
+        
+        const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth + xOffset;
+        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
 
         // Keep it straight as requested (no rotation on its axis)
         // Only vertical translation and scaling
@@ -151,13 +163,17 @@ export default function Home() {
             tempCtx.fillStyle = shirtColor;
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             
-            ctx.drawImage(shirtImage, -scale / 2, -scale / 2, scale, scale * (shirtImage.height / shirtImage.width));
+            const drawWidth = scale;
+            const drawHeight = scale * (shirtImage.height / shirtImage.width);
+            ctx.drawImage(shirtImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
             ctx.globalAlpha = 0.6;
-            ctx.drawImage(tempCanvas, -scale / 2, -scale / 2, scale, scale * (shirtImage.height / shirtImage.width));
+            ctx.drawImage(tempCanvas, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
             ctx.globalAlpha = 1.0;
           }
         } else {
-          ctx.drawImage(shirtImage, -scale / 2, -scale / 2, scale, scale * (shirtImage.height / shirtImage.width));
+          const drawWidth = scale;
+          const drawHeight = scale * (shirtImage.height / shirtImage.width);
+          ctx.drawImage(shirtImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
         }
 
         ctx.translate(-centerX, -centerY);
