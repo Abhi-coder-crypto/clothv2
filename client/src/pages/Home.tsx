@@ -10,8 +10,12 @@ import { useSaveLook } from "@/hooks/use-looks";
 import { Gallery } from "@/components/Gallery";
 import { ColorPicker } from "@/components/ColorPicker";
 
-// Default transparent shirt image
-const DEFAULT_SHIRT = "https://raw.githubusercontent.com/google/mediapipe/master/mediapipe/web/solutions/pose/assets/shirt_white.png";
+const TSHIRT_VIEWS = {
+  front: "/tshirt-front.png",
+  back: "/tshirt-back.png",
+  left: "/tshirt-left.png",
+  right: "/tshirt-right.png",
+};
 
 const SHIRT_COLORS = [
   "#FFFFFF", // White
@@ -27,22 +31,36 @@ export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [shirtImage, setShirtImage] = useState<HTMLImageElement | null>(null);
+  const [shirtImages, setShirtImages] = useState<Record<string, HTMLImageElement>>({});
+  const [currentView, setCurrentView] = useState<keyof typeof TSHIRT_VIEWS>("front");
   const [shirtColor, setShirtColor] = useState<string>("#FFFFFF");
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const saveLook = useSaveLook();
 
-  // Load initial shirt
+  // Load all t-shirt views
   useEffect(() => {
-    const img = new Image();
-    img.src = DEFAULT_SHIRT;
-    img.crossOrigin = "anonymous";
-    img.onload = () => setShirtImage(img);
+    const loadImages = async () => {
+      const loaded: Record<string, HTMLImageElement> = {};
+      const promises = Object.entries(TSHIRT_VIEWS).map(([key, src]) => {
+        return new Promise<void>((resolve) => {
+          const img = new Image();
+          img.src = src;
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            loaded[key] = img;
+            resolve();
+          };
+        });
+      });
+      await Promise.all(promises);
+      setShirtImages(loaded);
+    };
+    loadImages();
   }, []);
 
   const onResults = useCallback((results: Results) => {
-    if (!canvasRef.current || !webcamRef.current?.video || !shirtImage) return;
+    if (!canvasRef.current || !webcamRef.current?.video || Object.keys(shirtImages).length === 0) return;
 
     const videoWidth = webcamRef.current.video.videoWidth;
     const videoHeight = webcamRef.current.video.videoHeight;
@@ -59,62 +77,70 @@ export default function Home() {
     // Draw the camera feed
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-    // Draw full body mesh (skeleton) for better visualization and tracking accuracy
-    if (results.poseLandmarks) {
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      
-      // Filter landmarks to exclude face points (0-10)
-      const bodyLandmarks = results.poseLandmarks.map((lm, i) => i < 11 ? { ...lm, visibility: 0 } : lm);
-      
-      drawConnectors(ctx, bodyLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
-      drawLandmarks(ctx, bodyLandmarks, { color: '#FF0000', lineWidth: 1 });
-      ctx.restore();
-    }
-
     if (results.poseLandmarks) {
       const landmarks = results.poseLandmarks;
       
-      // Key landmarks for shirt positioning
-      // 11: Left Shoulder, 12: Right Shoulder
-      // 23: Left Hip, 24: Right Hip
+      // Key landmarks for shirt positioning and angle detection
       const leftShoulder = landmarks[11];
       const rightShoulder = landmarks[12];
       const leftHip = landmarks[23];
       const rightHip = landmarks[24];
+      const nose = landmarks[0];
 
       if (leftShoulder.visibility && leftShoulder.visibility > 0.5 &&
           rightShoulder.visibility && rightShoulder.visibility > 0.5) {
         
-        // Calculate shirt width based on shoulder distance
+        // --- View Detection ---
+        // Calculate shoulder depth/angle to determine which view to show
+        // Since it's mirrored, we need to be careful with left/right
+        const shoulderDistance = Math.abs(leftShoulder.x - rightShoulder.x);
+        const noseRelativeToShoulders = (nose.x - rightShoulder.x) / (leftShoulder.x - rightShoulder.x);
+        
+        let view: keyof typeof TSHIRT_VIEWS = "front";
+        
+        // Basic angle detection based on shoulder visibility and positioning
+        // If nose is far to one side of the shoulder midline, it's a side view
+        if (shoulderDistance < 0.15) {
+          // If shoulders are very close horizontally, it's likely a side view or turned away
+          if (nose.visibility && nose.visibility < 0.3) {
+            view = "back";
+          } else if (leftShoulder.z < rightShoulder.z) {
+            view = "left";
+          } else {
+            view = "right";
+          }
+        } else if (nose.visibility && nose.visibility < 0.3) {
+          view = "back";
+        } else if (noseRelativeToShoulders < 0.3) {
+          view = "right";
+        } else if (noseRelativeToShoulders > 0.7) {
+          view = "left";
+        }
+
+        const shirtImage = shirtImages[view];
+        if (!shirtImage) return;
+
+        // --- Positioning ---
         const shoulderWidth = Math.sqrt(
           Math.pow((leftShoulder.x - rightShoulder.x) * videoWidth, 2) +
           Math.pow((leftShoulder.y - rightShoulder.y) * videoHeight, 2)
         );
 
-        // Scale factor (tweak this for fit)
-        // Adjusted from 2.8 to 2.2 to fit the body box more accurately
-        const scale = shoulderWidth * 2.2; 
+        // Adjust scale for side views
+        const baseScale = shoulderWidth * 2.2;
+        const scale = (view === "left" || view === "right") ? baseScale * 0.8 : baseScale;
         
-        // Calculate center point (midpoint between shoulders)
-        // Adjusted Y offset to 0.3 to move the shirt down a bit from the shoulders
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
         const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.3);
 
-        // Calculate rotation angle
-        // Add 180 degrees (Math.PI) to rotation to flip the shirt right-side up
-        const angle = Math.atan2(
-          (rightShoulder.y - leftShoulder.y) * videoHeight,
-          (rightShoulder.x - leftShoulder.x) * videoWidth
-        ) + Math.PI;
+        // Keep it straight as requested (no rotation on its axis)
+        // Only vertical translation and scaling
 
-        // Draw the shirt
+        // --- Drawing ---
         ctx.translate(centerX, centerY);
-        ctx.rotate(angle);
         
-        // Apply color tint if not white
+        // Apply color tint
         if (shirtColor !== "#FFFFFF") {
-          // Create temp canvas for tinting
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = shirtImage.width;
           tempCanvas.height = shirtImage.height;
@@ -125,9 +151,8 @@ export default function Home() {
             tempCtx.fillStyle = shirtColor;
             tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             
-            // Draw original then tint on top with multiply/overlay
             ctx.drawImage(shirtImage, -scale / 2, -scale / 2, scale, scale * (shirtImage.height / shirtImage.width));
-            ctx.globalAlpha = 0.6; // Tint strength
+            ctx.globalAlpha = 0.6;
             ctx.drawImage(tempCanvas, -scale / 2, -scale / 2, scale, scale * (shirtImage.height / shirtImage.width));
             ctx.globalAlpha = 1.0;
           }
@@ -135,12 +160,11 @@ export default function Home() {
           ctx.drawImage(shirtImage, -scale / 2, -scale / 2, scale, scale * (shirtImage.height / shirtImage.width));
         }
 
-        ctx.rotate(-angle);
         ctx.translate(-centerX, -centerY);
       }
     }
     ctx.restore();
-  }, [shirtImage, shirtColor]);
+  }, [shirtImages, shirtColor]);
 
   useEffect(() => {
     let camera: Camera | null = null;
@@ -188,7 +212,7 @@ export default function Home() {
       reader.onload = (e) => {
         const img = new Image();
         img.src = e.target?.result as string;
-        img.onload = () => setShirtImage(img);
+        img.onload = () => setShirtImages(prev => ({ ...prev, front: img }));
       };
       reader.readAsDataURL(file);
     }

@@ -5,6 +5,13 @@ import { Button } from "./ui/button";
 export function Gallery() {
   const { data: looks, isLoading } = useLooks();
 
+  const staticImages = [
+    { id: 'static-1', imageUrl: '/tshirt-front.png' },
+    { id: 'static-2', imageUrl: '/tshirt-back.png' },
+    { id: 'static-3', imageUrl: '/tshirt-left.png' },
+    { id: 'static-4', imageUrl: '/tshirt-right.png' },
+  ];
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -15,37 +22,29 @@ export function Gallery() {
     );
   }
 
-  if (!looks?.length) {
-    return (
-      <div className="text-center py-12 text-muted-foreground border border-dashed border-white/10 rounded-2xl bg-white/5">
-        <p>No saved looks yet.</p>
-        <p className="text-sm mt-1">Take a snapshot to save it here!</p>
-      </div>
-    );
-  }
+  const allLooks = [...staticImages, ...(looks || [])];
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-display font-semibold text-white">Saved Looks</h3>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {looks.map((look) => (
+        {allLooks.map((look) => (
           <div 
             key={look.id} 
-            className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-black/40 border border-white/10 hover:border-primary/50 transition-colors"
+            className="group relative aspect-square rounded-2xl overflow-hidden bg-black/40 border border-white/10 hover:border-primary/50 transition-colors"
           >
             <img 
               src={look.imageUrl} 
-              alt={`Saved look ${look.id}`} 
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              alt="Shirt design" 
+              className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-4">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-2">
               <a 
                 href={look.imageUrl} 
-                download={`look-${look.id}.png`}
+                download="shirt-design.png"
                 className="w-full"
               >
-                <Button size="sm" variant="glass" className="w-full">
-                  <Download className="w-4 h-4 mr-2" />
+                <Button size="sm" variant="glass" className="w-full text-[10px] h-7">
+                  <Download className="w-3 h-3 mr-1" />
                   Save
                 </Button>
               </a>
