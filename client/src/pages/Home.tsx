@@ -102,16 +102,17 @@ export default function Home() {
           if (nose.visibility && nose.visibility < 0.3) {
             view = "back";
           } else if (leftShoulder.z < rightShoulder.z) {
-            view = "left";
-          } else {
+            // Mirrored feed logic: nose side determines left/right view
             view = "right";
+          } else {
+            view = "left";
           }
         } else if (nose.visibility && nose.visibility < 0.3) {
           view = "back";
         } else if (noseRelativeToShoulders < 0.3) {
-          view = "right";
-        } else if (noseRelativeToShoulders > 0.7) {
           view = "left";
+        } else if (noseRelativeToShoulders > 0.7) {
+          view = "right";
         }
 
         const shirtImage = shirtImages[view];
@@ -133,18 +134,15 @@ export default function Home() {
           scale = bodyHeight * 1.8;
         }
 
-        // Calculate rotation based on shoulder line
-        const angle = Math.atan2(
-          (rightShoulder.y - leftShoulder.y) * videoHeight,
-          (rightShoulder.x - leftShoulder.x) * videoWidth
-        ) + Math.PI;
+        // Keep it straight as requested (no rotation on its axis)
+        const angle = 0; 
         
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
         const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.25);
 
         // --- Drawing ---
         ctx.translate(centerX, centerY);
-        ctx.rotate(angle); // Allow slight tilt to match shoulder line
+        // ctx.rotate(angle); // REMOVED ROTATION as requested
         
         const drawWidth = scale;
         const drawHeight = scale * (shirtImage.height / shirtImage.width);
@@ -170,7 +168,7 @@ export default function Home() {
           ctx.drawImage(shirtImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
         }
 
-        ctx.rotate(-angle);
+        // ctx.rotate(-angle);
         ctx.translate(-centerX, -centerY);
       }
     }
