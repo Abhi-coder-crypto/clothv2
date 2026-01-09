@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertSavedLook } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import { type InsertSavedLook } from "@shared/schema";
 
 export function useLooks() {
   return useQuery({

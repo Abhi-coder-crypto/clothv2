@@ -130,17 +130,19 @@ export default function Home() {
         let yOffset = scale * 0.25;
         
         if (view === "left" || view === "right") {
-          // Reduce side view scale as it was appearing too big
+          // Profile view: use vertical height for scale
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
-          scale = bodyHeight * 1.4; // Reduced from 1.8 to 1.4
+          scale = bodyHeight * 1.6; // Slightly larger to cover torso
           
-          // The issue is that the centerY calculation uses 0.25 offset
-          // Let's force a larger offset for side views specifically
-          yOffset = scale * 1.0; // Increased from 0.85 to 1.0 to move it even lower
+          // Anchor closer to shoulders but move down to cover chest/torso
+          // In profile, use the visible shoulder's Y as a starting point
+          const visibleShoulderY = (view === "left" ? leftShoulder.y : rightShoulder.y) * videoHeight;
+          centerY = visibleShoulderY + (scale * 0.55); // Moved down from 0.4 to 0.55
+        } else {
+          centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
         }
         
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
 
         // --- Drawing ---
         ctx.translate(centerX, centerY);
