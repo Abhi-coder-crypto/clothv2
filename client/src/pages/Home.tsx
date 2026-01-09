@@ -127,11 +127,13 @@ export default function Home() {
 
         // For front/back, use shoulder distance. For sides, we need to estimate depth.
         let scale = shoulderDistPx * 2.4;
+        let yOffset = scale * 0.25;
         
         if (view === "left" || view === "right") {
           // Reduce side view scale as it was appearing too big
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
           scale = bodyHeight * 1.4; // Reduced from 1.8 to 1.4
+          yOffset = scale * 0.45; // Moved down from 0.35 to 0.45
         }
 
         // Keep it straight as requested (no rotation on its axis)
