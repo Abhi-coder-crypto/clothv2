@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Webcam from "react-webcam";
-import { Pose, POSE_CONNECTIONS, Results } from "@mediapipe/pose";
+import { Pose, Results } from "@mediapipe/pose";
 import { Camera } from "@mediapipe/camera_utils";
-import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera as CameraIcon, RefreshCw, Smartphone, MousePointer2 } from "lucide-react";
+import { RefreshCw, Smartphone, MousePointer2 } from "lucide-react";
+
 // @ts-ignore
 import frontImg from "@assets/Front2__1__cleanup-removebg-preview_1767940938162.png";
 // @ts-ignore
@@ -23,17 +23,11 @@ export default function Home() {
   const [useGyro, setUseGyro] = useState(false);
   const [mousePos, setMousePos] = useState(0);
   const [orientation, setOrientation] = useState({ alpha: 0 });
-  const [currentView, setCurrentView] = useState({ img: frontImg, label: "Front" });
-
+  
   const shirtImages = useRef<{ [key: string]: HTMLImageElement }>({});
 
   useEffect(() => {
-    const images = {
-      Front: frontImg,
-      Left: leftImg,
-      Right: rightImg,
-      Back: backImg
-    };
+    const images = { Front: frontImg, Left: leftImg, Right: rightImg, Back: backImg };
     Object.entries(images).forEach(([key, src]) => {
       const img = new Image();
       img.src = src;
@@ -52,19 +46,14 @@ export default function Home() {
     }
   }, [useGyro]);
 
-  const getRotationAngle = useCallback(() => {
+  const currentView = useMemo(() => {
     let angle = useGyro ? orientation.alpha : mousePos;
-    return ((angle % 360) + 360) % 360;
+    angle = ((angle % 360) + 360) % 360;
+    if (angle >= 45 && angle < 135) return { img: rightImg, label: "Right" };
+    if (angle >= 135 && angle < 225) return { img: backImg, label: "Back" };
+    if (angle >= 225 && angle < 315) return { img: leftImg, label: "Left" };
+    return { img: frontImg, label: "Front" };
   }, [useGyro, orientation.alpha, mousePos]);
-
-  useEffect(() => {
-    const angle = getRotationAngle();
-    let view = { img: frontImg, label: "Front" };
-    if (angle >= 45 && angle < 135) view = { img: rightImg, label: "Right" };
-    else if (angle >= 135 && angle < 225) view = { img: backImg, label: "Back" };
-    else if (angle >= 225 && angle < 315) view = { img: leftImg, label: "Left" };
-    setCurrentView(view);
-  }, [getRotationAngle]);
 
   const onResults = useCallback((results: Results) => {
     if (!canvasRef.current || !webcamRef.current?.video) return;
@@ -86,9 +75,10 @@ export default function Home() {
       const leftShoulder = landmarks[11];
       const rightShoulder = landmarks[12];
 
-      if (leftShoulder.visibility && leftShoulder.visibility > 0.5 &&
-          rightShoulder.visibility && rightShoulder.visibility > 0.5) {
-        
+      const leftVis = leftShoulder?.visibility ?? 0;
+      const rightVis = rightShoulder?.visibility ?? 0;
+
+      if (leftVis > 0.5 && rightVis > 0.5) {
         const shirtImg = shirtImages.current[currentView.label];
         if (shirtImg) {
           const shoulderWidth = Math.sqrt(
@@ -141,8 +131,12 @@ export default function Home() {
 
   const requestPermission = async () => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === "function") {
-      const permissionState = await (DeviceOrientationEvent as any).requestPermission();
-      if (permissionState === "granted") setUseGyro(true);
+      try {
+        const permissionState = await (DeviceOrientationEvent as any).requestPermission();
+        if (permissionState === "granted") setUseGyro(true);
+      } catch (e) {
+        console.error("Permission request failed", e);
+      }
     } else {
       setUseGyro(true);
     }
