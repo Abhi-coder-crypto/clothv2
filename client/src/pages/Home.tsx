@@ -97,26 +97,28 @@ export default function Home() {
         let view: keyof typeof TSHIRT_VIEWS = "front";
         
         // Use depth (z) and horizontal positioning for more robust view detection
-        if (shoulderDistance < 0.12) {
-          // Narrow shoulder profile indicates side view
+        if (shoulderDistance < 0.1) {
+          // Very narrow shoulder profile: side view
           if (leftShoulder.z < rightShoulder.z) {
-            // Mirrored feed logic: nose side determines left/right view
             view = "right";
           } else {
             view = "left";
           }
-        } else if (nose.visibility && nose.visibility < 0.25) {
-          // Face pointing away: back view
+        } else if (nose.visibility && nose.visibility < 0.05) {
+          // Face pointing away: back view (reduced threshold even more for stability)
           view = "back";
-        } else if (leftShoulder.z < -0.15 && rightShoulder.z < -0.15) {
-          // Shoulders far behind hips: back view
+        } else if (leftShoulder.z < -0.4 && rightShoulder.z < -0.4) {
+          // Shoulders far behind: back view
           view = "back";
-        } else if (noseRelativeToShoulders < 0.35) {
-          view = "left";
-        } else if (noseRelativeToShoulders > 0.65) {
-          view = "right";
+        } else if (shoulderDistance < 0.15 && Math.abs(leftShoulder.z - rightShoulder.z) > 0.15) {
+          // Moderate profile: side view
+          if (leftShoulder.z < rightShoulder.z) {
+            view = "right";
+          } else {
+            view = "left";
+          }
         } else {
-          // Facing camera: front view
+          // Default to front when facing camera
           view = "front";
         }
 
@@ -144,8 +146,8 @@ export default function Home() {
           const visibleShoulderY = (view === "left" ? leftShoulder.y : rightShoulder.y) * videoHeight;
           
           const drawHeight = scale * (shirtImage.height / shirtImage.width);
-          // Anchor TOP of shirt at shoulder line
-          centerY = visibleShoulderY + (drawHeight / 2) - (drawHeight * 0.1); 
+          // Anchor TOP of shirt precisely at shoulder line (extreme upward adjustment)
+          centerY = visibleShoulderY + (drawHeight / 2) - (drawHeight * 0.52); 
         } else {
           centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
         }
