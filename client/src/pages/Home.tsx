@@ -105,16 +105,19 @@ export default function Home() {
           } else {
             view = "left";
           }
-        } else if (leftShoulder.z < -0.05 && rightShoulder.z < -0.05) {
-          // Sensitive back detection: shoulders further from camera than center
+        } else if (nose.visibility && nose.visibility < 0.25) {
+          // Face pointing away: back view
           view = "back";
-        } else if (nose.visibility && nose.visibility < 0.4) {
-          // Low nose visibility strongly suggests facing away
+        } else if (leftShoulder.z < -0.15 && rightShoulder.z < -0.15) {
+          // Shoulders far behind hips: back view
           view = "back";
         } else if (noseRelativeToShoulders < 0.35) {
           view = "left";
         } else if (noseRelativeToShoulders > 0.65) {
           view = "right";
+        } else {
+          // Facing camera: front view
+          view = "front";
         }
 
         const shirtImage = shirtImages[view];
@@ -141,7 +144,8 @@ export default function Home() {
           const visibleShoulderY = (view === "left" ? leftShoulder.y : rightShoulder.y) * videoHeight;
           
           const drawHeight = scale * (shirtImage.height / shirtImage.width);
-          centerY = visibleShoulderY + (drawHeight / 2);
+          // Anchor TOP of shirt at shoulder line
+          centerY = visibleShoulderY + (drawHeight / 2) - (drawHeight * 0.1); 
         } else {
           centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
         }
