@@ -4,9 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Smartphone, MousePointer2 } from "lucide-react";
+// @ts-ignore
 import frontImg from "@assets/Front2__1__cleanup-removebg-preview_1767940938162.png";
+// @ts-ignore
 import leftImg from "@assets/left2_1767940938161.PNG";
+// @ts-ignore
 import rightImg from "@assets/right2_1767940938161.PNG";
+// @ts-ignore
 import backImg from "@assets/Back2_1767940938160.PNG";
 
 export default function Home() {
