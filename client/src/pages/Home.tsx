@@ -49,6 +49,7 @@ export default function Home() {
   const currentView = useMemo(() => {
     let angle = useGyro ? orientation.alpha : mousePos;
     angle = ((angle % 360) + 360) % 360;
+    // Standard rotation: 0=Front, 90=Right, 180=Back, 270=Left
     if (angle >= 45 && angle < 135) return { img: rightImg, label: "Right" };
     if (angle >= 135 && angle < 225) return { img: backImg, label: "Back" };
     if (angle >= 225 && angle < 315) return { img: leftImg, label: "Left" };
@@ -79,7 +80,9 @@ export default function Home() {
       const rightVis = rightShoulder?.visibility ?? 0;
 
       if (leftVis > 0.5 && rightVis > 0.5) {
+        // Use the label to look up the correct PRELOADED image object
         const shirtImg = shirtImages.current[currentView.label];
+        
         if (shirtImg) {
           const shoulderWidth = Math.sqrt(
             Math.pow((leftShoulder.x - rightShoulder.x) * videoWidth, 2) +
@@ -96,6 +99,7 @@ export default function Home() {
 
           ctx.translate(centerX, centerY);
           ctx.rotate(angle);
+          // Draw the SPECIFIC image for the current rotation
           ctx.drawImage(shirtImg, -scale / 2, -scale / 2, scale, scale * (shirtImg.height / shirtImg.width));
           ctx.rotate(-angle);
           ctx.translate(-centerX, -centerY);
@@ -103,7 +107,7 @@ export default function Home() {
       }
     }
     ctx.restore();
-  }, [currentView]);
+  }, [currentView.label]); // Depend specifically on the label to trigger redraw with correct image
 
   useEffect(() => {
     let camera: Camera | null = null;
