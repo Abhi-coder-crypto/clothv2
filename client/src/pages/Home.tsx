@@ -6,7 +6,7 @@ import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Smartphone, MousePointer2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 // @ts-ignore
 import frontImg from "@assets/Front2__1__cleanup-removebg-preview_1767940938162.png";
@@ -21,7 +21,6 @@ export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [useGyro, setUseGyro] = useState(false);
   const [mousePos, setMousePos] = useState(0);
   const [orientation, setOrientation] = useState({ alpha: 0 });
   
@@ -35,26 +34,26 @@ export default function Home() {
       img.crossOrigin = "anonymous";
       img.onload = () => { shirtImages.current[key] = img; };
     });
+
+    // Auto-enable orientation listener
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      if (event.alpha !== null) {
+        setOrientation({ alpha: event.alpha });
+      }
+    };
+    window.addEventListener("deviceorientation", handleOrientation);
+    return () => window.removeEventListener("deviceorientation", handleOrientation);
   }, []);
 
-  useEffect(() => {
-    if (useGyro) {
-      const handleOrientation = (event: DeviceOrientationEvent) => {
-        setOrientation({ alpha: event.alpha || 0 });
-      };
-      window.addEventListener("deviceorientation", handleOrientation);
-      return () => window.removeEventListener("deviceorientation", handleOrientation);
-    }
-  }, [useGyro]);
-
   const currentView = useMemo(() => {
-    let angle = useGyro ? orientation.alpha : mousePos;
+    // Combine both mouse and orientation for rotation
+    let angle = (orientation.alpha || 0) + mousePos;
     angle = ((angle % 360) + 360) % 360;
     if (angle >= 45 && angle < 135) return { img: rightImg, label: "Right" };
     if (angle >= 135 && angle < 225) return { img: backImg, label: "Back" };
     if (angle >= 225 && angle < 315) return { img: leftImg, label: "Left" };
     return { img: frontImg, label: "Front" };
-  }, [useGyro, orientation.alpha, mousePos]);
+  }, [orientation.alpha, mousePos]);
 
   const onResults = useCallback((results: Results) => {
     if (!canvasRef.current || !webcamRef.current?.video) return;
@@ -72,7 +71,6 @@ export default function Home() {
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
     if (results.poseLandmarks) {
-      // Always draw skeleton tracking points
       ctx.save();
       ctx.globalAlpha = 0.5;
       drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
@@ -137,34 +135,19 @@ export default function Home() {
     return () => { if (camera) camera.stop(); };
   }, [isCameraActive, onResults]);
 
-  const requestPermission = async () => {
-    if (typeof (DeviceOrientationEvent as any).requestPermission === "function") {
-      try {
-        const permissionState = await (DeviceOrientationEvent as any).requestPermission();
-        if (permissionState === "granted") setUseGyro(true);
-      } catch (e) {
-        console.error("Permission request failed", e);
-      }
-    } else {
-      setUseGyro(true);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
       <div className="max-w-4xl w-full space-y-6 text-center">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">V-TryOn 360°</h1>
-          <p className="text-muted-foreground">Rotate the shirt via motion/mouse while trying it on</p>
+          <p className="text-muted-foreground">Rotate the shirt via motion or mouse while trying it on</p>
         </div>
 
         <Card 
           className="relative aspect-[4/3] max-w-2xl mx-auto overflow-hidden bg-black rounded-3xl border-2"
           onMouseMove={(e) => {
-            if (!useGyro) {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setMousePos(((e.clientX - rect.left) / rect.width) * 360);
-            }
+            const rect = e.currentTarget.getBoundingClientRect();
+            setMousePos(((e.clientX - rect.left) / rect.width) * 360);
           }}
         >
           {isCameraActive ? (
@@ -185,18 +168,15 @@ export default function Home() {
         </Card>
 
         <div className="flex flex-wrap gap-4 justify-center items-center">
-          <Button variant={useGyro ? "default" : "outline"} onClick={requestPermission} className="gap-2">
-            <Smartphone className="w-4 h-4" /> {useGyro ? "Gyro Active" : "Enable Motion"}
-          </Button>
-          <Button variant={!useGyro ? "default" : "outline"} onClick={() => setUseGyro(false)} className="gap-2">
-            <MousePointer2 className="w-4 h-4" /> Desktop Mode
-          </Button>
           {isCameraActive && (
             <Button variant="destructive" onClick={() => setIsCameraActive(false)} className="gap-2">
               <RefreshCw className="w-4 h-4" /> Stop Camera
             </Button>
           )}
         </div>
+        <p className="text-sm text-muted-foreground">
+          Tip: Rotate yourself or move your mouse over the screen to see different angles
+        </p>
       </div>
     </div>
   );
