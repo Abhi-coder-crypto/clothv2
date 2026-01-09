@@ -44,15 +44,6 @@ export default function Home() {
     return () => window.removeEventListener("deviceorientation", handleOrientation);
   }, []);
 
-  const currentView = useMemo(() => {
-    let angle = (orientation.alpha || 0) + mousePos;
-    angle = ((angle % 360) + 360) % 360;
-    if (angle >= 45 && angle < 135) return { img: rightImg, label: "Right" };
-    if (angle >= 135 && angle < 225) return { img: backImg, label: "Back" };
-    if (angle >= 225 && angle < 315) return { img: leftImg, label: "Left" };
-    return { img: frontImg, label: "Front" };
-  }, [orientation.alpha, mousePos]);
-
   const onResults = useCallback((results: Results) => {
     if (!canvasRef.current || !webcamRef.current?.video) return;
 
@@ -85,15 +76,29 @@ export default function Home() {
       const rightVis = rightShoulder?.visibility ?? 0;
 
       if (leftVis > 0.5 && rightVis > 0.5) {
-        const shirtImg = shirtImages.current[currentView.label];
+        // Calculate the user's rotation from shoulder depth/z-values
+        // z-values in MediaPipe: negative is closer to camera
+        const shoulderDiffZ = (leftShoulder.z - rightShoulder.z) * 100;
+        
+        // Combine shoulder orientation with manual/sensor rotation
+        const manualRotation = ((orientation.alpha || 0) + mousePos) % 360;
+        
+        // Map total rotation to a view label
+        let viewLabel = "Front";
+        let angle = (manualRotation + (shoulderDiffZ * 5)) % 360;
+        angle = (angle + 360) % 360;
+
+        if (angle >= 45 && angle < 135) viewLabel = "Right";
+        else if (angle >= 135 && angle < 225) viewLabel = "Back";
+        else if (angle >= 225 && angle < 315) viewLabel = "Left";
+
+        const shirtImg = shirtImages.current[viewLabel];
         if (shirtImg) {
-          // Calculate plane from shoulders and hips
           const shoulderMidX = (leftShoulder.x + rightShoulder.x) / 2;
           const shoulderMidY = (leftShoulder.y + rightShoulder.y) / 2;
           const hipMidX = (leftHip.x + rightHip.x) / 2;
           const hipMidY = (leftHip.y + rightHip.y) / 2;
 
-          // Calculate dimensions
           const shoulderWidth = Math.sqrt(
             Math.pow((leftShoulder.x - rightShoulder.x) * videoWidth, 2) +
             Math.pow((leftShoulder.y - rightShoulder.y) * videoHeight, 2)
@@ -113,13 +118,13 @@ export default function Home() {
           const centerY = (shoulderMidY + (hipMidY - shoulderMidY) * 0.4) * videoHeight;
 
           // Rotation based on shoulder tilt
-          const angle = Math.atan2(
+          const tiltAngle = Math.atan2(
             (rightShoulder.y - leftShoulder.y) * videoHeight,
             (rightShoulder.x - leftShoulder.x) * videoWidth
           ) + Math.PI;
 
           ctx.translate(centerX, centerY);
-          ctx.rotate(angle);
+          ctx.rotate(tiltAngle);
           
           // Apply a slight skew/perspective based on shoulder-hip alignment
           const skewX = (shoulderMidX - hipMidX) * 0.5;
@@ -132,7 +137,7 @@ export default function Home() {
       }
     }
     ctx.restore();
-  }, [currentView.label]);
+  }, [orientation.alpha, mousePos]);
 
   useEffect(() => {
     let camera: Camera | null = null;
@@ -163,7 +168,7 @@ export default function Home() {
       <div className="max-w-4xl w-full space-y-6 text-center">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">V-TryOn 360°</h1>
-          <p className="text-muted-foreground">The shirt now aligns with your body plane</p>
+          <p className="text-muted-foreground">The shirt now aligns with your body plane and rotates with you</p>
         </div>
 
         <Card 
@@ -180,14 +185,10 @@ export default function Home() {
             </>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 space-y-4">
-              <img src={currentView.img} className="w-64 h-64 object-contain mb-4" alt="Preview" />
+              <img src={frontImg} className="w-64 h-64 object-contain mb-4" alt="Preview" />
               <Button size="lg" onClick={() => setIsCameraActive(true)}>Enable Try-On Camera</Button>
             </div>
           )}
-          
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            <Badge variant="secondary" className="px-4 py-1">{currentView.label} View</Badge>
-          </div>
         </Card>
 
         <div className="flex flex-wrap gap-4 justify-center items-center">
