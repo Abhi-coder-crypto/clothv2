@@ -128,6 +128,7 @@ export default function Home() {
         // For front/back, use shoulder distance. For sides, we need to estimate depth.
         let scale = shoulderDistPx * 2.4;
         let yOffset = scale * 0.25;
+        let centerY: number;
         
         if (view === "left" || view === "right") {
           // Profile view: use vertical height for scale
