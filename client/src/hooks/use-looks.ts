@@ -8,7 +8,7 @@ export function useLooks() {
       const res = await fetch(api.looks.list.path);
       if (!res.ok) throw new Error("Failed to fetch looks");
       const data = await res.json();
-      return api.looks.list.responses[200].parse(data);
+      return data;
     },
   });
 }

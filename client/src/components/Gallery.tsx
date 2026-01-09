@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLooks, useDeleteLook } from "@/hooks/use-looks";
 import { Download, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -5,13 +6,14 @@ import { Button } from "./ui/button";
 export function Gallery() {
   const { data: looks, isLoading } = useLooks();
   const deleteLook = useDeleteLook();
+  const [removedStaticIds, setRemovedStaticIds] = useState<string[]>([]);
 
   const staticImages = [
     { id: 'static-1', imageUrl: '/tshirt-front.png', isStatic: true },
     { id: 'static-2', imageUrl: '/tshirt-back.png', isStatic: true },
     { id: 'static-3', imageUrl: '/tshirt-left.png', isStatic: true },
     { id: 'static-4', imageUrl: '/tshirt-right.png', isStatic: true },
-  ];
+  ].filter(img => !removedStaticIds.includes(img.id));
 
   if (isLoading) {
     return (
@@ -23,11 +25,13 @@ export function Gallery() {
     );
   }
 
-  const allLooks = [...staticImages, ...(looks?.map(l => ({ ...l, isStatic: false })) || [])];
+  const allLooks = [...staticImages, ...(looks?.map((l: any) => ({ ...l, isStatic: false })) || [])];
 
   const handleDelete = async (id: any) => {
     if (typeof id === 'number') {
       await deleteLook.mutateAsync(id);
+    } else if (typeof id === 'string' && id.startsWith('static-')) {
+      setRemovedStaticIds(prev => [...prev, id]);
     }
   };
 
@@ -55,18 +59,16 @@ export function Gallery() {
                   Save
                 </Button>
               </a>
-              {!look.isStatic && (
-                <Button 
-                  size="sm" 
-                  variant="destructive" 
-                  className="w-full text-[10px] h-7"
-                  onClick={() => handleDelete(look.id)}
-                  disabled={deleteLook.isPending}
-                >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  Delete
-                </Button>
-              )}
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                className="w-full text-[10px] h-7"
+                onClick={() => handleDelete(look.id)}
+                disabled={typeof look.id === 'number' && deleteLook.isPending}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete
+              </Button>
             </div>
           </div>
         ))}
