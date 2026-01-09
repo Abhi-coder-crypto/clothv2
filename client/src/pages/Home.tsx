@@ -35,7 +35,6 @@ export default function Home() {
       img.onload = () => { shirtImages.current[key] = img; };
     });
 
-    // Auto-enable orientation listener
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (event.alpha !== null) {
         setOrientation({ alpha: event.alpha });
@@ -46,7 +45,6 @@ export default function Home() {
   }, []);
 
   const currentView = useMemo(() => {
-    // Combine both mouse and orientation for rotation
     let angle = (orientation.alpha || 0) + mousePos;
     angle = ((angle % 360) + 360) % 360;
     if (angle >= 45 && angle < 135) return { img: rightImg, label: "Right" };
@@ -72,7 +70,7 @@ export default function Home() {
 
     if (results.poseLandmarks) {
       ctx.save();
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.3;
       drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
       drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
       ctx.restore();
@@ -80,6 +78,8 @@ export default function Home() {
       const landmarks = results.poseLandmarks;
       const leftShoulder = landmarks[11];
       const rightShoulder = landmarks[12];
+      const leftHip = landmarks[23];
+      const rightHip = landmarks[24];
 
       const leftVis = leftShoulder?.visibility ?? 0;
       const rightVis = rightShoulder?.visibility ?? 0;
@@ -87,14 +87,32 @@ export default function Home() {
       if (leftVis > 0.5 && rightVis > 0.5) {
         const shirtImg = shirtImages.current[currentView.label];
         if (shirtImg) {
+          // Calculate plane from shoulders and hips
+          const shoulderMidX = (leftShoulder.x + rightShoulder.x) / 2;
+          const shoulderMidY = (leftShoulder.y + rightShoulder.y) / 2;
+          const hipMidX = (leftHip.x + rightHip.x) / 2;
+          const hipMidY = (leftHip.y + rightHip.y) / 2;
+
+          // Calculate dimensions
           const shoulderWidth = Math.sqrt(
             Math.pow((leftShoulder.x - rightShoulder.x) * videoWidth, 2) +
             Math.pow((leftShoulder.y - rightShoulder.y) * videoHeight, 2)
           );
+          
+          const torsoHeight = Math.sqrt(
+            Math.pow((shoulderMidX - hipMidX) * videoWidth, 2) +
+            Math.pow((shoulderMidY - hipMidY) * videoHeight, 2)
+          );
 
-          const scale = shoulderWidth * 2.2;
-          const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-          const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.3);
+          // Scaling factors for a "stuck" fit
+          const shirtWidth = shoulderWidth * 1.8;
+          const shirtHeight = torsoHeight * 1.6;
+
+          // Center on torso
+          const centerX = shoulderMidX * videoWidth;
+          const centerY = (shoulderMidY + (hipMidY - shoulderMidY) * 0.4) * videoHeight;
+
+          // Rotation based on shoulder tilt
           const angle = Math.atan2(
             (rightShoulder.y - leftShoulder.y) * videoHeight,
             (rightShoulder.x - leftShoulder.x) * videoWidth
@@ -102,9 +120,14 @@ export default function Home() {
 
           ctx.translate(centerX, centerY);
           ctx.rotate(angle);
-          ctx.drawImage(shirtImg, -scale / 2, -scale / 2, scale, scale * (shirtImg.height / shirtImg.width));
-          ctx.rotate(-angle);
-          ctx.translate(-centerX, -centerY);
+          
+          // Apply a slight skew/perspective based on shoulder-hip alignment
+          const skewX = (shoulderMidX - hipMidX) * 0.5;
+          ctx.transform(1, 0, skewX, 1, 0, 0);
+
+          ctx.drawImage(shirtImg, -shirtWidth / 2, -shirtHeight / 3, shirtWidth, shirtHeight);
+          
+          ctx.restore();
         }
       }
     }
@@ -140,7 +163,7 @@ export default function Home() {
       <div className="max-w-4xl w-full space-y-6 text-center">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">V-TryOn 360°</h1>
-          <p className="text-muted-foreground">Rotate the shirt via motion or mouse while trying it on</p>
+          <p className="text-muted-foreground">The shirt now aligns with your body plane</p>
         </div>
 
         <Card 
@@ -174,9 +197,6 @@ export default function Home() {
             </Button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Tip: Rotate yourself or move your mouse over the screen to see different angles
-        </p>
       </div>
     </div>
   );
