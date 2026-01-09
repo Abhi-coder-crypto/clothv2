@@ -24,7 +24,6 @@ export default function Home() {
   const [useGyro, setUseGyro] = useState(false);
   const [mousePos, setMousePos] = useState(0);
   const [orientation, setOrientation] = useState({ alpha: 0 });
-  const [showSkeleton, setShowSkeleton] = useState(true);
   
   const shirtImages = useRef<{ [key: string]: HTMLImageElement }>({});
 
@@ -73,14 +72,12 @@ export default function Home() {
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
     if (results.poseLandmarks) {
-      // Draw skeleton tracking points if enabled
-      if (showSkeleton) {
-        ctx.save();
-        ctx.globalAlpha = 0.5;
-        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
-        drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
-        ctx.restore();
-      }
+      // Always draw skeleton tracking points
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+      drawLandmarks(ctx, results.poseLandmarks, { color: '#FF0000', lineWidth: 1 });
+      ctx.restore();
 
       const landmarks = results.poseLandmarks;
       const leftShoulder = landmarks[11];
@@ -114,7 +111,7 @@ export default function Home() {
       }
     }
     ctx.restore();
-  }, [currentView.label, showSkeleton]);
+  }, [currentView.label]);
 
   useEffect(() => {
     let camera: Camera | null = null;
@@ -193,9 +190,6 @@ export default function Home() {
           </Button>
           <Button variant={!useGyro ? "default" : "outline"} onClick={() => setUseGyro(false)} className="gap-2">
             <MousePointer2 className="w-4 h-4" /> Desktop Mode
-          </Button>
-          <Button variant={showSkeleton ? "default" : "outline"} onClick={() => setShowSkeleton(!showSkeleton)} className="gap-2">
-             Tracking Points: {showSkeleton ? "ON" : "OFF"}
           </Button>
           {isCameraActive && (
             <Button variant="destructive" onClick={() => setIsCameraActive(false)} className="gap-2">
