@@ -133,12 +133,11 @@ export default function Home() {
         if (view === "left" || view === "right") {
           // Profile view: use vertical height for scale
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
-          scale = bodyHeight * 1.6; // Slightly larger to cover torso
+          scale = bodyHeight * 1.6; 
           
-          // Anchor closer to shoulders but move down to cover chest/torso
-          // In profile, use the visible shoulder's Y as a starting point
+          // Move higher to align with shoulders
           const visibleShoulderY = (view === "left" ? leftShoulder.y : rightShoulder.y) * videoHeight;
-          centerY = visibleShoulderY + (scale * 0.55); // Moved down from 0.4 to 0.55
+          centerY = visibleShoulderY + (scale * 0.3); // Reduced from 0.55 to 0.3 to pull it up
         } else {
           centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
         }
