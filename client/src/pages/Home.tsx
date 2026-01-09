@@ -99,19 +99,21 @@ export default function Home() {
         // Use depth (z) and horizontal positioning for more robust view detection
         if (shoulderDistance < 0.12) {
           // Narrow shoulder profile indicates side view
-          if (nose.visibility && nose.visibility < 0.3) {
-            view = "back";
-          } else if (leftShoulder.z < rightShoulder.z) {
+          if (leftShoulder.z < rightShoulder.z) {
             // Mirrored feed logic: nose side determines left/right view
             view = "right";
           } else {
             view = "left";
           }
-        } else if (nose.visibility && nose.visibility < 0.3) {
+        } else if (leftShoulder.z < -0.05 && rightShoulder.z < -0.05) {
+          // Sensitive back detection: shoulders further from camera than center
           view = "back";
-        } else if (noseRelativeToShoulders < 0.3) {
+        } else if (nose.visibility && nose.visibility < 0.4) {
+          // Low nose visibility strongly suggests facing away
+          view = "back";
+        } else if (noseRelativeToShoulders < 0.35) {
           view = "left";
-        } else if (noseRelativeToShoulders > 0.7) {
+        } else if (noseRelativeToShoulders > 0.65) {
           view = "right";
         }
 
