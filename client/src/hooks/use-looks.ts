@@ -1,13 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type InsertSavedLook } from "@shared/routes";
-import { z } from "zod";
-
-// Create a local schema for validation to avoid type errors
-const savedLookSelectSchema = z.object({
-  id: z.number(),
-  imageUrl: z.string(),
-  createdAt: z.string().optional().or(z.date().optional()),
-});
 
 export function useLooks() {
   return useQuery({
@@ -15,9 +7,7 @@ export function useLooks() {
     queryFn: async () => {
       const res = await fetch(api.looks.list.path);
       if (!res.ok) throw new Error("Failed to fetch looks");
-      const data = await res.json();
-      // Ensure we're returning the raw data to match the expected usage in components
-      return data;
+      return await res.json();
     },
   });
 }
@@ -32,7 +22,7 @@ export function useSaveLook() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to save look");
-      return api.looks.create.responses[201].parse(await res.json());
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.looks.list.path] });
@@ -49,7 +39,7 @@ export function useDeleteLook() {
         method: api.looks.delete.method,
       });
       if (!res.ok) throw new Error("Failed to delete look");
-      return api.looks.delete.responses[200].parse(await res.json());
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.looks.list.path] });

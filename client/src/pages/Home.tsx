@@ -133,14 +133,14 @@ export default function Home() {
           // Reduce side view scale as it was appearing too big
           const bodyHeight = Math.abs(leftShoulder.y - leftHip.y) * videoHeight;
           scale = bodyHeight * 1.4; // Reduced from 1.8 to 1.4
-          yOffset = scale * 0.85; // Increased from 0.7 to 0.85 to move the image lower
+          
+          // The issue is that the centerY calculation uses 0.25 offset
+          // Let's force a larger offset for side views specifically
+          yOffset = scale * 1.0; // Increased from 0.85 to 1.0 to move it even lower
         }
-
-        // Keep it straight as requested (no rotation on its axis)
-        const angle = 0; 
         
         const centerX = ((leftShoulder.x + rightShoulder.x) / 2) * videoWidth;
-        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + (scale * 0.25);
+        const centerY = ((leftShoulder.y + rightShoulder.y) / 2) * videoHeight + yOffset;
 
         // --- Drawing ---
         ctx.translate(centerX, centerY);
